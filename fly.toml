@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for mymys on 2024-03-11T03:01:14+09:00
+# fly.toml app configuration file generated for mymys on 2024-03-11T06:12:08+09:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -8,7 +8,7 @@ primary_region = 'hkg'
 console_command = '/rails/bin/rails console'
 
 [build]
-  dockerfile = "Dockerfile.prod"
+  dockerfile = 'Dockerfile.prod'
 
 [deploy]
   release_command = './bin/rails db:prepare'
