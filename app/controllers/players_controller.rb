@@ -11,19 +11,38 @@ class PlayersController < ApplicationController
         render json: @character
     end
     def create
+        @names = []
+        @players = player_params[:player]
+        @victim = player_params[:victim]
+        @players.each do |player|
+            @names.push(player[:name])
+        end
         @story = Room.find(params[:room_id]).story
         @characters = Character.where(story: @story)
-        @players = []
-        @names = ["いちこ","ふたみ","さんご"]
-        @characters.zip(@names) do |character, name|
-            @player = Player.create(
-                room: Room.find(params[:room_id]),
-                character: character,
-                name: name
+        @room = Room.find(params[:room_id])
+        Room.transaction do
+            @room.update!(
+                victim: @victim
             )
-            @players.push(@player)
+            Player.transaction do
+                @characters.zip(@names) do |character, name|
+                    @player = Player.create!(
+                        room: Room.find(params[:room_id]),
+                        character: character,
+                        name: name
+                    )
+                    @players.push(@player)
+                end
+            end
         end
         p @players
-        render json: @players
+        p @room
+        render json: @room
     end
+
+    private
+
+    def player_params
+        params.require(:players).permit(:victim, :v_gender, player: [[:name, :gender]])
+    end    
 end
