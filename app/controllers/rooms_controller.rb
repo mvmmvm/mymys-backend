@@ -2,8 +2,15 @@
 
 class RoomsController < ApplicationController
     def create
-        @room = Room.create(story: Story.new)
+        if params[:story_id]
+            @room = Room.create(story: Story.find(params[:story_id]))
+        else
+            @room = Room.create(story: Story.new)
+        end
         render json: @room
+    end
+    def new
+        
     end
 
     def show
@@ -70,7 +77,7 @@ class RoomsController < ApplicationController
         gender3 = "男性"
         error_count = 0
 
-        1.times do
+        # 1.times do
             @chats = request_gpt([name1, name2, name3], [gender1, gender2, gender3])
             p @chats
 
@@ -87,11 +94,11 @@ class RoomsController < ApplicationController
             @confession = validate(@chats.match(/その人物が高橋信夫を殺害した理由をその人物の秘密の内容に強く関連させて独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:)|$)/m), 2)
             main_part = [@chats, @set, @body, @weapon, @place, @time, @victim, @v_gender, @v_personality, @v_job, @criminal, @confession]
 
-            if main_part.any? { |content| content.nil? }
-                error_count += 1
-                p "including nil."
-                next
-            end
+            # if main_part.any? { |content| content.nil? }
+            #     error_count += 1
+            #     p "including nil."
+            #     next
+            # end
 
             story.update(all: @chats)
 
@@ -159,25 +166,27 @@ class RoomsController < ApplicationController
                         evidence: @evidence,
                         is_criminal: @is_criminal
                     )
-                    Player.create(
+                    @players = Player.create(
                         character: @character,
                         room: room,
                         name: name
                     )
                 end
             end
-            if character_error
-                error_count += 1
-                p "including nil."
-                next
-            else
-                break
-            end
+            # if character_error
+            #     error_count += 1
+            #     p "including nil."
+            #     next
+            # else
+            #     break
+            # end
 
-        end
-        if error_count == 2
-            raise StandardError.new("Responsed contents including NULL 2 times.")
-        end
+        # end
+        # if error_count == 2
+        #     raise StandardError.new("Responsed contents including NULL 2 times.")
+        # end
+        @players
+
 
     end
 
