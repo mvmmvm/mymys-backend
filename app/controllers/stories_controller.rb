@@ -52,7 +52,7 @@ class StoriesController < ApplicationController
         else
             p content[index]
             if content[index]
-                content[index].gsub("\s", "")
+                content[index].gsub(/\s/, "")
             else
                 nil
             end
