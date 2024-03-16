@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_03_13_153842) do
+ActiveRecord::Schema[7.0].define(version: 2024_03_15_220337) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -35,16 +35,20 @@ ActiveRecord::Schema[7.0].define(version: 2024_03_13_153842) do
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "solved", default: false
+    t.boolean "answered", default: false
+    t.boolean "success"
     t.index ["character_id"], name: "index_players_on_character_id"
     t.index ["room_id"], name: "index_players_on_room_id"
   end
 
   create_table "rooms", force: :cascade do |t|
     t.bigint "story_id"
-    t.boolean "solved"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "victim"
+    t.integer "solve", default: 0
+    t.integer "answer", default: 0
     t.index ["story_id"], name: "index_rooms_on_story_id"
   end
 

@@ -1,8 +1,9 @@
+require 'net/http'
+require 'uri'
+
 class PlayersController < ApplicationController
     def index
-        p params[:room_id]
         @players = Room.find(params[:room_id]).players
-        p @players
         render json: @players
     end
     def show
@@ -60,8 +61,14 @@ class PlayersController < ApplicationController
                 end
             end
         end
-        render json: {story: @story, character: @character, stuffs: @stuffs}
-       
+        render json: {
+            story: @story,
+            character: @character,
+            stuffs: @stuffs,
+            room_id: @room.id,
+            solve_count: @room.solve,
+            solved: @player.solved
+        }    
     end
     def create
         @names = []
@@ -88,8 +95,6 @@ class PlayersController < ApplicationController
                 end
             end
         end
-        p @players
-        p @room
         render json: @room
     end
 

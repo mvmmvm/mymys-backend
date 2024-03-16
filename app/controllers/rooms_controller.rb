@@ -11,8 +11,5 @@ class RoomsController < ApplicationController
     end
     def show
         render json: @room
-        # @room = Room.find(params[:id])
-        # @chats = Story.find(@room.story.id)
-        # @players = Player.where(room: @room)
     end
 end

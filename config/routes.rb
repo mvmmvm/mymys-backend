@@ -3,6 +3,10 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   mount ActionCable.server => '/cable'
+  get '/hoge', to: 'results#hoge'
+  get '/players/:id/solve', to: 'results#solve'
+  post '/players/:id/answer', to: 'results#answer'
+  get '/players/:id/result', to: 'results#result'
   resources :stories, shallow: true do
     resources :characters
     resources :rooms do  

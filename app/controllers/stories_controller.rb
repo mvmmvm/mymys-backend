@@ -27,21 +27,18 @@ class StoriesController < ApplicationController
     end
 
     def update
-        p "---------------------------"
         @room = Room.find(params[:id])
-        p @room
         @story = Story.find(@room.story.id)
-        p @story
         if @story.all
-            p "aru"
             @chats = @story
         else
-            p "nai"
             @players = create_story(@room, @story)
             @room.update(story: @story)
+            @room.update(story: @story)
+            
+            @room.update(story: @story)            
             
         end
-        p @players
         render json: @players
     end
 
@@ -52,7 +49,7 @@ class StoriesController < ApplicationController
         else
             p content[index]
             if content[index]
-                content[index].gsub(/\s/, "")
+                content[index]
             else
                 nil
             end
@@ -64,11 +61,8 @@ class StoriesController < ApplicationController
     def player_params
         params.require(:players).permit(:victim, :v_gender, player: [[:name, :gender]])
     end
-    def create_story(room, story)
-        p "-----^-"
-        p player_params
-        p "-----^-"
 
+    def create_story(room, story)
         @names = []
         @genders = []
         @players = player_params[:player]
@@ -198,8 +192,6 @@ class StoriesController < ApplicationController
     end
 
     def request_gpt
-        p ENV['ACCESS_TOKEN']
-        p "------"
         names = []
         genders = []
 
@@ -216,6 +208,9 @@ class StoriesController < ApplicationController
             request_timeout: 600
         )
         
+        
+        p @client
+
         p @client
         suspects = names.join("、")
         tmp_names = names.dup
@@ -248,11 +243,8 @@ class StoriesController < ApplicationController
             "#{victim}の性格:\n"\
             "#{victim}の職業:\n"
 
-
         character_str = ""
-        p "------------------"
-        p names
-        p "------------------"
+
         names.zip(genders) do |name, gender|
             character_str +=
                 "#{name}の性別:#{gender}\n"\
@@ -273,8 +265,6 @@ class StoriesController < ApplicationController
 
         @query = main_str + character_str + character_reason_str + last_str
 
-        p @query
-
         response = @client.chat(
         parameters: {
             frequency_penalty: 0,
@@ -286,8 +276,6 @@ class StoriesController < ApplicationController
             temperature: 1,
             top_p: 1
         })
-        p response
-
         @chats = response.dig("choices", 0, "message", "content")
 
     end
