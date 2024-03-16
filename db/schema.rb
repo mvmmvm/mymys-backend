@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -10,67 +12,67 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_03_15_220337) do
+ActiveRecord::Schema[7.0].define(version: 20_240_316_103_919) do
   # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
+  enable_extension 'plpgsql'
 
-  create_table "characters", force: :cascade do |t|
-    t.bigint "story_id", null: false
-    t.string "name"
-    t.string "gender"
-    t.text "personality"
-    t.string "job"
-    t.text "introduce"
-    t.string "stuff"
-    t.text "evidence", array: true
-    t.boolean "is_criminal"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["story_id"], name: "index_characters_on_story_id"
+  create_table 'characters', force: :cascade do |t|
+    t.bigint 'story_id', null: false
+    t.string 'name'
+    t.string 'gender'
+    t.text 'personality'
+    t.string 'job'
+    t.text 'introduce'
+    t.string 'stuff'
+    t.text 'evidence', array: true
+    t.boolean 'is_criminal'
+    t.datetime 'created_at', null: false
+    t.datetime 'updated_at', null: false
+    t.index ['story_id'], name: 'index_characters_on_story_id'
   end
 
-  create_table "players", force: :cascade do |t|
-    t.bigint "room_id", null: false
-    t.bigint "character_id", null: false
-    t.string "name", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.boolean "solved", default: false
-    t.boolean "answered", default: false
-    t.boolean "success"
-    t.index ["character_id"], name: "index_players_on_character_id"
-    t.index ["room_id"], name: "index_players_on_room_id"
+  create_table 'players', force: :cascade do |t|
+    t.bigint 'room_id', null: false
+    t.bigint 'character_id', null: false
+    t.string 'name', null: false
+    t.datetime 'created_at', null: false
+    t.datetime 'updated_at', null: false
+    t.boolean 'solved', default: false
+    t.boolean 'answered', default: false
+    t.boolean 'success'
+    t.index ['character_id'], name: 'index_players_on_character_id'
+    t.index ['room_id'], name: 'index_players_on_room_id'
   end
 
-  create_table "rooms", force: :cascade do |t|
-    t.bigint "story_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "victim"
-    t.integer "solve", default: 0
-    t.integer "answer", default: 0
-    t.index ["story_id"], name: "index_rooms_on_story_id"
+  create_table 'rooms', force: :cascade do |t|
+    t.bigint 'story_id'
+    t.datetime 'created_at', null: false
+    t.datetime 'updated_at', null: false
+    t.string 'victim'
+    t.integer 'solve_count', default: 0
+    t.integer 'answer_count', default: 0
+    t.index ['story_id'], name: 'index_rooms_on_story_id'
   end
 
-  create_table "stories", force: :cascade do |t|
-    t.string "name"
-    t.string "set"
-    t.text "body"
-    t.string "weapon"
-    t.string "place"
-    t.string "time"
-    t.string "victim"
-    t.string "v_gender"
-    t.string "v_personality"
-    t.string "v_job"
-    t.text "confession"
-    t.text "all"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+  create_table 'stories', force: :cascade do |t|
+    t.string 'name'
+    t.string 'set'
+    t.text 'body'
+    t.string 'weapon'
+    t.string 'place'
+    t.string 'time'
+    t.string 'victim'
+    t.string 'v_gender'
+    t.string 'v_personality'
+    t.string 'v_job'
+    t.text 'confession'
+    t.text 'all'
+    t.datetime 'created_at', null: false
+    t.datetime 'updated_at', null: false
   end
 
-  add_foreign_key "characters", "stories"
-  add_foreign_key "players", "characters"
-  add_foreign_key "players", "rooms"
-  add_foreign_key "rooms", "stories"
+  add_foreign_key 'characters', 'stories'
+  add_foreign_key 'players', 'characters'
+  add_foreign_key 'players', 'rooms'
+  add_foreign_key 'rooms', 'stories'
 end
