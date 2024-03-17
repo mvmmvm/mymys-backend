@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for mymys on 2024-03-15T17:42:39+09:00
+# fly.toml app configuration file generated for mymys on 2024-03-18T06:43:48+09:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -24,6 +24,13 @@ console_command = '/rails/bin/rails console'
   min_machines_running = 0
   processes = ['app']
 
+[[services]]
+  protocol = ''
+  internal_port = 0
+  auto_stop_machines = false
+  auto_start_machines = false
+  ports = []
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
@@ -32,7 +39,3 @@ console_command = '/rails/bin/rails console'
 [[statics]]
   guest_path = '/rails/public'
   url_prefix = '/'
-
-[[services]]
-  auto_start_machines = false
-  auto_stop_machines = false

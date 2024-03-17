@@ -32,7 +32,11 @@ class StoriesController < ApplicationController
   def update
     @room = Room.find(params[:room_id])
     @story = @room.story
-    @players = create_story(@room, @story)
+    begin
+      @players = create_story(@room, @story)
+    rescue
+      RoomChannel.broadcast_to(@room, { type: 'story_create_error' })
+    end    
     @room.update(story: @story)
     RoomChannel.broadcast_to(@room, { type: 'story_created' })
     render json: @players
