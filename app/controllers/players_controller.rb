@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require 'net/http'
-require 'uri'
-
 class PlayersController < ApplicationController
   def index
     @players = Room.find(params[:room_id]).players

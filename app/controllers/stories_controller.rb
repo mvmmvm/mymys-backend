@@ -24,20 +24,17 @@ class StoriesController < ApplicationController
   def show; end
 
   def create
-    @room = Room.create(story: Story.new)
-    render json: @room
+    @story = Story.new
+    @room = Room.create(story: @story)
+    render json: { story: @story, room: @room }
   end
 
   def update
-    @room = Room.find(params[:id])
-    @story = Story.find(@room.story.id)
-    if @story.all
-      @chats = @story
-    else
-      @players = create_story(@room, @story)
-      @room.update(story: @story)
-
-    end
+    @room = Room.find(params[:room_id])
+    @story = @room.story
+    @players = create_story(@room, @story)
+    @room.update(story: @story)
+    RoomChannel.broadcast_to(@room, { type: 'story_created' })
     render json: @players
   end
 
@@ -55,7 +52,7 @@ class StoriesController < ApplicationController
   private
 
   def player_params
-    params.require(:players).permit(:victim, :v_gender, player: [%i[name gender]])
+    params.require(:players).permit(:room_id, :victim, :v_gender, player: [%i[name gender]])
   end
 
   def create_story(room, story)
