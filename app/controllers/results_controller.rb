@@ -30,7 +30,7 @@ class ResultsController < ApplicationController
     @room = @player.room
     @players = @room.players
     @story = @room.story
-    @victim = @story.victim
+    @victim = @room.victim
     @characters = @story.characters
     @confession = @room.story.confession
     @characters.each do |character|
@@ -41,14 +41,15 @@ class ResultsController < ApplicationController
         # プレイヤーの名前で置き換える
         @confession.gsub!("[#{character[:name]}]", (player[:name]).to_s)
         @confession.gsub!('[被害者]', @victim.to_s)
+        if character.is_criminal
+          @criminal = player.name
+        end
       end
     end
     @is_criminal = @player.character.is_criminal
     @criminal_win = !@room.players.includes(:character).where(character: { is_criminal: false }).all?(&:success)
-    render json: { room_id: @room.id, is_criminal: @is_criminal, criminal_win: @criminal_win, confession: @confession }
+    render json: { room_id: @room.id, criminal: @criminal, is_criminal: @is_criminal, criminal_win: @criminal_win, confession: @confession }
   end
-
-  def hoge; end
 
   private
 

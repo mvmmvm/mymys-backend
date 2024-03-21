@@ -28,6 +28,11 @@ class PlayersController < ApplicationController
           character.stuff.gsub!('[被害者]', @victim.to_s)
           @stuffs.push(character.stuff)
         end
+        if character.is_criminal
+          @criminal_stuff = character.stuff
+          @criminal_stuff.gsub!("[#{character[:name]}]", (player[:name]).to_s)
+          @criminal_stuff.gsub!('[被害者]', @victim.to_s)
+        end
         @character.attributes.each do |key, value|
           # nameカラムは単純にプレイヤーのnameで置き換える
           if key == 'name'
@@ -64,8 +69,8 @@ class PlayersController < ApplicationController
       story: @story,
       character: @character,
       stuffs: @stuffs,
-      room_id: @room.id,
-      solve_count: @room.solve_count,
+      room: @room,
+      criminal_stuff: @criminal_stuff,
       solved: @player.solved
     }
   end
@@ -88,8 +93,8 @@ class PlayersController < ApplicationController
         @characters.zip(@names) do |character, name|
           @player = Player.create!(
             room: Room.find(params[:room_id]),
-            character:,
-            name:
+            character: character,
+            name: name
           )
           @players.push(@player)
         end

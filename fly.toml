@@ -4,7 +4,7 @@
 #
 
 app = 'mymys'
-primary_region = 'hkg'
+primary_region = 'nrt'
 console_command = '/rails/bin/rails console'
 
 [build]
@@ -32,7 +32,7 @@ console_command = '/rails/bin/rails console'
   ports = []
 
 [[vm]]
-  memory = '1gb'
+  memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
 
