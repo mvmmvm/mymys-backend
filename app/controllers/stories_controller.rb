@@ -36,11 +36,12 @@ class StoriesController < ApplicationController
     @story = @room.story
     begin
       @players = create_story(@room, @story)
-    rescue
+      @room.update(story: @story)
+      RoomChannel.broadcast_to(@room, { type: 'story_created' })
+    rescue StandardError => e
+      p e.message
       RoomChannel.broadcast_to(@room, { type: 'story_create_error' })
     end    
-    @room.update(story: @story)
-    RoomChannel.broadcast_to(@room, { type: 'story_created' })
     render json: @players
   end
 
@@ -51,7 +52,7 @@ class StoriesController < ApplicationController
       ''
     else
       p content[index]
-      content[index] || nil
+      content[index].gsub(/\s/, "") || nil
     end
   end
 
@@ -72,11 +73,9 @@ class StoriesController < ApplicationController
       @genders.push(player[:gender])
     end
 
-    begin
-      @chats = request_gpt(room)
-    rescue
-      RoomChannel.broadcast_to(room, { type: 'story_create_error' })
-    end
+    @chats, @criminal = request_gpt(room)
+
+    p @chats
 
     @set = validate(@chats.match(/舞台(：|:|は)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2)
     @set = @set.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]',
@@ -99,16 +98,16 @@ class StoriesController < ApplicationController
     @v_job = validate(@chats.match(/#{@victim}の職業(：|:|は)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2)
     @v_job = @v_job.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/,
                          (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]')
-    @criminal = validate(
-      @chats.match(/#{@names[0]}、#{@names[1]}、#{@names[2]}のうち#{@victim}.+犯人.+?(：|:|は)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2
-    )
+    # @criminal = validate(
+    #   @chats.match(/#{@names[0]}、#{@names[1]}、#{@names[2]}のうち#{@victim}を殺害した犯人は誰ですか(：|:)\s?((?:.|\s)+?)(?=\s[^：|:\s]+(：|:))/m), 2
+    # )
     @confession = validate(
-      @chats.match(/その人物が#{@victim}を殺害した理由をその人物の秘密の内容に強く関連させて独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2
+      @chats.match(/#{@criminal}が#{@victim}を殺害した理由をその人物の秘密の内容に強く関連させて独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^：:\s]+(：|:))/m), 2
     )
     @confession = @confession.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/,
                                    (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]')
     @name = validate(
-      @chats.match(/ストーリー名(叙情的に)(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:)|$)/m), 2
+      @chats.match(/叙情的かつ創造性豊かなストーリー名を考えてください(：|:)\s?((?:.|\s)+?)(?=(\s[^：:\s]+(：|:)|$))/m), 2
     )
     @main_part = [@set, @name, @body, @weapon, @place, @time, @victim, @v_gender, @v_personality, @v_job, @criminal,
                   @confession]
@@ -132,9 +131,9 @@ class StoriesController < ApplicationController
         all: @chats
       )
 
-      Room.update!(victim: @victim)
+      room.update!(victim: @victim)
 
-      @characters = Character.where(story:)
+      @characters = Character.where(story: story)
       @players = []
       if @characters.blank?
         @characters = []
@@ -148,7 +147,7 @@ class StoriesController < ApplicationController
           @job = @job.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/,
                            (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]')
           @introduce = validate(
-            @chats.match(/#{name}のここにいる理由と自身の秘密の内容と事件直前に取った行動を300字程度で独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2
+            @chats.match(/#{name}のここにいる理由と上記リストから1つ選んだ自身の秘密の内容と事件直前に取った行動と事件直後の行動を、より詳細に500字程度で独白させてください。秘密の内容や心情、行動の理由などを掘り下げて描写してください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2
           )
           @introduce = @introduce.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/,
                                        (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]')
@@ -156,57 +155,60 @@ class StoriesController < ApplicationController
           @stuff = @stuff.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/,
                                (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]')
           @evidence = [
-            validate(@chats.match(/#{name}が事件後に他の人物に聞いたり現場を調べてわかったことか他の人物の行動に関すること(１|1)を独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 3).gsub(
+            validate(@chats.match(/#{name}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや他の人物の行動に関する情報1を、より具体的かつ詳細に150字程度で独白させてください。ただし犯行と秘密に直接的に結びつかないことで(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2).gsub(
               /#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]'
             ),
-            validate(@chats.match(/#{name}が事件後に他の人物に聞いたり現場を調べてわかったことか他の人物の行動に関すること(２|2)を独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 3).gsub(
+            validate(@chats.match(/#{name}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや他の人物の行動に関する情報2を、より具体的かつ詳細に150字程度で独白させてください。ただし犯行と秘密に直接的に結びつかないことで(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2).gsub(
               /#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]'
             ),
-            validate(@chats.match(/#{name}が事件後に他の人物に聞いたり現場を調べてわかったことか他の人物の行動に関すること(３|3)を独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 3).gsub(
-              /#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]'
-            )
+            # validate(@chats.match(/#{name}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや他の人物の行動に関する情報3を、より具体的かつ詳細に150字程度で独白させてください(：|:)\s?((?:.|\s)+?)(?=\s[^(：|:)\s]+(：|:))/m), 2).gsub(
+            #   /#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]'
+            # )
           ]
           character_part = [@gender, @personality, @job, @introduce, @stuff, @evidence]
 
-          raise StandardError, 'Responsed contents including NULL.' if character_part.any?(&:blank?)
+          if character_part.any?(&:blank?) || @introduce.length < 5 || @evidence.any? { |content| content.length < 5 }
+            raise StandardError, 'Responsed contents including NULL.'
+          end
 
-          raise StandardError, 'Responsed contents including NULL.' if @introduce.length < 5
-
-          raise StandardError, 'Responsed contents including NULL.' if @evidence.any? { |content| content.length < 5 }
-
-          @is_criminal = if @criminal.include?(name)
+          @is_criminal = if @criminal == name
                            true
                          else
                            false
                          end
+          Character.transaction do
 
-          @character = Character.create!(
-            story:,
-            name: "人物#{count + 1}",
-            gender: @gender,
-            personality: @personality,
-            job: @job,
-            introduce: @introduce,
-            stuff: @stuff,
-            evidence: @evidence,
-            is_criminal: @is_criminal
-          )
-          @characters.push(@character)
-          @player = Player.create!(
-            character: @character,
-            room: room,
-            name: name
-          )
+            @character = Character.create!(
+              story: story,
+              name: "人物#{count + 1}",
+              gender: @gender,
+              personality: @personality,
+              job: @job,
+              introduce: @introduce,
+              stuff: @stuff,
+              evidence: @evidence,
+              is_criminal: @is_criminal
+            )
+            @characters.push(@character)
+            Player.transaction do
+              @player = Player.create!(
+                character: @character,
+                room: room,
+                name: name
+              )
+            end
           @players.push(@player)
+          end
         end
-        count = 0
-        @characters.each do |character|
-          count += 1 if character.is_criminal
-        end
-        raise StandardError, 'Responsed contents include something wrong.' if count > 1 || count.zero?
+        # count = 0
+        # @characters.each do |character|
+        #   count += 1 if character.is_criminal
+        # end
+        # if count > 1 || count.zero?
+        #   raise StandardError, 'Responsed contents include something wrong.'
+        # end
       end
     end
-
     @players
   end
 
@@ -223,6 +225,8 @@ class StoriesController < ApplicationController
       genders.push(player[:gender])
     end
 
+    criminal = names.sample
+
     suspects = names.join('、')
     tmp_names = names.dup
     all_char = tmp_names.push(victim).join('、')
@@ -231,19 +235,18 @@ class StoriesController < ApplicationController
       "[条件]\n"\
         'マーダーミステリーの下記の設定を条件通りに作ってください。'\
         '既に設定があるものについてはそのままにしておいてください。'\
-        "人物たちとは[#{suspects}]のことです。"\
-        "人物たちのうちの1人が#{victim}を殺害した犯人です。"\
+        "登場人物は「#{names[0]}」「#{names[1]}」「#{names[2]}」「#{victim}」の4人です。彼らは会話や心理描写などあらゆる場面で、絶対にこのフルネームのみを使ってください。指定されたフルネーム以外の名前は絶対に使わないでください。"\
+        "#{criminal}が#{victim}を殺害した犯人です。"\
         '人物同士での共謀・協力はさせないでください。'\
-        '人物たちは自分以外の人物の行動について1つ以上知っていることがあります。'\
+        '人物たちは自分以外の人物の行動について、その人物が認知している範囲で1つ以上知っていることがあります。'\
+        '人物たちに、事件前後、他の人物の持つ秘密や犯行に関係する情報を知る機会はなかったことにしてください。'\
         '秘密の証拠品には人物たちの名前を出さないでください。'\
         '人物の秘密の内容と秘密の証拠品は強く関連させてください。'\
-        '各人物が知っている情報は、その人物の視点から得られる範囲内のものに限定してください。'\
-        '秘密の証拠品は必ず設定し、重複させないでください。'\
-        '人物たちに、事件前後、他の人物の持つ秘密に関係する情報を知る機会はなかったことにしてください。'\
-        '人物たちの秘密の内容は下記から1つ選びすべて別々のものにしてください。'\
-        "恋愛/病気や健康状態/職場でのトラブル/逮捕歴/同性愛/薬物やアルコールの依存/不倫/身体的な制約/過去の仕事やキャリア/自己の能力やスキルに関する不安/被害経験（いじめ、虐待、暴力など）/過去の自殺未遂/逮捕歴/学業成績/反社会的なグループや組織への所属/身体的な制約やハンディキャップ/精神的な障害や病気/薬物の使用経験/自身の過去のトラウマ/プライベートな写真や動画/過去の仕事の失敗/学歴/秘密のプロジェクトや計画/自身の身体的な問題/他人からの評価や批判/借金/学校や職場での評価/自己の過去の失敗や過ち\n\n"\
+        '各人物の秘密の証拠品は、必ず1人につき1つずつ設定してください。証拠品は、手紙、日記、写真、物品など、それぞれの秘密に関連するユニークなものにしてください。また、証拠品が他の人物と重複しないよう、十分に注意を払ってください。'\
+        '人物たちの秘密の内容は次から1つ選びすべて別々のものにしてください。'\
+        "恋愛/病気や健康状態/職場でのトラブル/逮捕歴/同性愛/薬物やアルコールの依存/不倫/身体的な制約/過去の仕事やキャリア/自己の能力やスキルに関する不安/被害経験（いじめ、虐待、暴力など）/過去の自殺未遂/逮捕歴/学業成績/反社会的なグループや組織への所属/身体的な制約やハンディキャップ/精神的な障害や病気/薬物の使用経験/自身の過去のトラウマ/プライベートな写真や動画/過去の仕事の失敗/学歴/秘密のプロジェクトや計画/自身の身体的な問題/他人からの評価や批判/借金/学校や職場での評価/自己の過去の失敗や過ち\n"\
+        "設定全体を通して、これらの条件に違反がないことを複数回確認し、必要であれば修正を行ってください。\n\n"\
         "[設定]\n"\
-        "登場人物は全員、会話や心理描写などあらゆる場面で必ずフルネーム[#{all_char}]で呼び合うようにしてください。\n"\
         "事件の舞台:#{set}\n"\
         "事件:殺人\n"\
         "事件のストーリー:\n"\
@@ -253,8 +256,9 @@ class StoriesController < ApplicationController
         "被害者の名前:#{victim}\n"\
         "#{victim}の性別:#{v_gender}\n"\
         "#{victim}の性格:\n"\
-        "#{victim}の職業:\n"
-
+        "#{victim}の職業:\n"\
+        "犯人:#{criminal}\n"\
+        
     character_str = ''
 
     names.zip(genders) do |name, gender|
@@ -262,21 +266,21 @@ class StoriesController < ApplicationController
         "#{name}の性別:#{gender}\n"\
           "#{name}の性格:\n"\
           "#{name}の職業:\n"\
-          "#{name}のここにいる理由と自身の秘密の内容と事件直前に取った行動を300字程度で独白させてください:「」\n"\
+          "#{name}のここにいる理由と上記リストから1つ選んだ自身の秘密の内容と事件直前に取った行動と事件直後の行動を、より詳細に500字程度で独白させてください。秘密の内容や心情、行動の理由などを掘り下げて描写してください:「」\n"\
           "#{name}の秘密の証拠品:\n"\
-          "#{name}が事件後に他の人物に聞いたり現場を調べてわかったことか他の人物の行動に関すること1を独白させてください:「」\n"\
-          "#{name}が事件後に他の人物に聞いたり現場を調べてわかったことか他の人物の行動に関すること2を独白させてください:「」\n"\
-          "#{name}が事件後に他の人物に聞いたり現場を調べてわかったことか他の人物の行動に関すること3を独白させてください:「」\n"
+          "#{name}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや他の人物の行動に関する情報1を、より具体的かつ詳細に150字程度で独白させてください。ただし犯行と秘密に直接的に結びつかないことで:「」\n"\
+          "#{name}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや他の人物の行動に関する情報2を、より具体的かつ詳細に150字程度で独白させてください。ただし犯行と秘密に直接的に結びつかないことで:「」\n"\
     end
 
     character_reason_str = ''
 
     last_str = \
-      "#{suspects}のうち#{victim}を殺害した犯人は誰ですか:\n"\
-        "その人物が#{victim}を殺害した理由をその人物の秘密の内容に強く関連させて独白させてください:「」\n"\
-        "ストーリー名(叙情的に):\n"\
+        "#{criminal}が#{victim}を殺害した理由をその人物の秘密の内容に強く関連させて独白させてください:「」\n"\
+        "叙情的かつ創造性豊かなストーリー名を考えてください:"
 
     query = main_str + character_str + character_reason_str + last_str
+
+    p query
 
     # APIのURL
     uri = URI('https://api.anthropic.com/v1/messages')
@@ -349,6 +353,6 @@ class StoriesController < ApplicationController
     # )
     # @chats = response.dig('choices', 0, 'message', 'content')
   
-    responced_text
+    return responced_text, criminal
   end
 end
