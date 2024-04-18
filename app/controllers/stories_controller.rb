@@ -42,20 +42,19 @@ class StoriesController < ApplicationController
       @room.update(story: @story)
       RoomChannel.broadcast_to(@room, { type: 'story_created' })
     rescue LimitOverError
-      sleep(3)
+      sleep(5)
       RoomChannel.broadcast_to(@room, { type: 'limit_over' })
     rescue OverLoadError
-      sleep(3)
+      sleep(5)
       RoomChannel.broadcast_to(@room, { type: 'over_load' })
     rescue StandardError
-      sleep(3)
+      sleep(5)
       RoomChannel.broadcast_to(@room, { type: 'story_create_error' })
     end    
-    render json: @players.shuffle
+    render json: @players
   end
 
   def validate(content, index)
-    # 怪しい挙動がある＆正規表現のブラッシュアップのためpを残す
     p content
     if content.nil?
       ''
@@ -335,7 +334,7 @@ class StoriesController < ApplicationController
       responced_text = parsed_response['content'][0]['text']
     elsif response.code == "429"
       raise LimitOverError
-    elsif response.code == "429"
+    elsif response.code == "529"
       raise OverLoadError
     else
       raise StandardError
