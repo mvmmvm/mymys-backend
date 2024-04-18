@@ -73,7 +73,6 @@ class PlayersController < ApplicationController
       criminal_stuff: @criminal_stuff,
       solved: @player.solved
     }
-    RoomChannel.broadcast_to(@room, { type: 'room_created' })
   end
 
   def create
@@ -101,7 +100,7 @@ class PlayersController < ApplicationController
         end
       end
     end
-    render json: @room
+    RoomChannel.broadcast_to(@room, { type: 'room_created' })
   end
 
   private

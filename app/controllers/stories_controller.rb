@@ -160,10 +160,10 @@ class StoriesController < ApplicationController
           @stuff = @stuff.gsub(/#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/,
                                (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]')
           @evidence = [
-            validate(@chats.match(/#{pp[:name]}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや.+?の行動に関する情報1を、.+?が.+?範囲内の行動で、#{pp[:name]}の視点からより具体的かつ詳細に.+?独白させてください。ただし.+?の秘密の内容.+?(：|:)\s?((?:.|\s)+?)(?=\s[^：|:\s]+(：|:))/m), 2).gsub(
+            validate(@chats.match(/#{pp[:name]}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや.+?の行動に関する情報1を、.+?が.+?範囲内の行動で、#{pp[:name]}の視点から.+?独白させてください。ただし.+?の秘密の内容.+?(：|:)\s?((?:.|\s)+?)(?=\s[^：|:\s]+(：|:))/m), 2).gsub(
               /#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]'
             ),
-            validate(@chats.match(/#{pp[:name]}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや.+?の行動に関する情報2を、.+?が.+?範囲内の行動で、#{pp[:name]}の視点からより具体的かつ詳細に.+?独白させてください。ただし.+?の秘密の内容.+?(：|:)\s?((?:.|\s)+?)(?=\s[^：|:\s]+(：|:))/m), 2).gsub(
+            validate(@chats.match(/#{pp[:name]}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや.+?の行動に関する情報2を、.+?が.+?範囲内の行動で、#{pp[:name]}の視点から.+?独白させてください。ただし.+?の秘密の内容.+?(：|:)\s?((?:.|\s)+?)(?=\s[^：|:\s]+(：|:))/m), 2).gsub(
               /#{@names[0]}|#{@names[1]}|#{@names[2]}|#{@victim}|#{@v_gender}/, (@names[0]).to_s => '[人物1]', (@names[1]).to_s => '[人物2]', (@names[2]).to_s => '[人物3]', @victim.to_s => '[被害者]'
             ),
           ]
@@ -258,14 +258,14 @@ class StoriesController < ApplicationController
         "#{innocent[:name]}の性別:#{innocent[:gender]}\n"\
           "#{innocent[:name]}の性格:\n"\
           "#{innocent[:name]}の職業:\n"\
-          "#{innocent[:name]}のここにいる理由と自身の秘密の内容と事件直前に取った行動と事件直後の行動を、より詳細に500~600字程度で独白させてください。秘密の内容や心情、行動の理由などを掘り下げて描写してください:「」\n"\
+          "#{innocent[:name]}のここにいる理由と自身の秘密の内容と事件直前に取った行動と事件直後の行動を、より詳細に400~500字程度で独白させてください。秘密の内容や心情、行動の理由などを掘り下げて描写してください:「」\n"\
           "#{innocent[:name]}の秘密の証拠品(#{suspects}という名前はいれないこと):\n"\
     end
     criminal_str = 
       "#{criminal[:name]}の性別:#{criminal[:gender]}\n"\
         "#{criminal[:name]}の性格:\n"\
         "#{criminal[:name]}の職業:\n"\
-        "#{criminal[:name]}のここにいる理由と自身の秘密の内容と事件直前に取った行動と事件直後の行動を、より詳細に500~600字程度で独白させてください。秘密の内容や心情、#{victim}を殺害した動機などを掘り下げて描写してください:「」\n"\
+        "#{criminal[:name]}のここにいる理由と自身の秘密の内容と事件直前に取った行動と事件直後の行動を、より詳細に400~500字程度で独白させてください。秘密の内容や心情、#{victim}を殺害した動機などを掘り下げて描写してください:「」\n"\
         "#{criminal[:name]}の秘密の証拠品(#{suspects}という名前はいれないこと):\n"\
 
     innocents_evidence_str = ''
@@ -273,7 +273,7 @@ class StoriesController < ApplicationController
       others = players.reject { |player| player == innocent }
       others.each_with_index do |other, i|
         innocents_evidence_str +=
-          "#{innocent[:name]}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや#{other[:name]}の行動に関する情報#{i+1}を、#{other[:name]}が認知している範囲内の行動で、#{innocent[:name]}の視点からより具体的かつ詳細に100~130字程度で独白させてください。ただし他の人物の秘密の内容や犯行、職業に関係する情報以外にしてください:「」\n"\
+          "#{innocent[:name]}が事件前、事件後に他の人物に聞いたり現場を調べてわかったことや#{other[:name]}の行動に関する情報#{i+1}を、#{other[:name]}が認知している範囲内の行動で、#{innocent[:name]}の視点からより具体的かつ詳細に100~130字程度で独白させてください。ただし他の人物の秘密の内容や#{criminal[:name]}の事件直前の行動、職業に関係する情報以外にしてください:「」\n"\
       end
     end
 
